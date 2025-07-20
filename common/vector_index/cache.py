@@ -5,12 +5,13 @@ from qdrant_client.http.models import PointStruct, models
 from typing_extensions import Self
 
 from common.config.setup import Config
-from common.utils.embedding import get_embeddings_for_text
+# from common.utils.embedding import get_embeddings_for_text
 from common.vector_index.manager import QdrantManager
 
 
 def get_embedding(question: str) -> list[float]:
-    return list(get_embeddings_for_text(text=question))
+    # return list(get_embeddings_for_text(text=question))
+    pass
 
 
 class SemanticCacheManager:

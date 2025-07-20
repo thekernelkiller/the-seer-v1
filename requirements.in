@@ -1,9 +1,31 @@
 fastapi
 uvicorn
-pydantic
-qdrant-client
+redis
+python-dotenv
+google-genai
 
-# --extra-index-url https://download.pytorch.org/whl/cpu
-# torch==2.2.1+cpu
+# Financial Analysis Agent Dependencies
+langgraph
+langchain
+langchain-google-genai
+twelvedata  # Correct package name for Twelve Data API
+requests  # for Serper API and general HTTP requests
+
+# Enhanced data handling
+httpx  # async HTTP client
+aiofiles  # async file operations
+
+# Production-ready dependencies
+pydantic-settings  # for enhanced config management
+typing-extensions  # for better type hints
+
+# Uncomment when needed
+qdrant-client
+tqdm
+# torch
 # sentence-transformers
+# scikit-learn
+# numpy
+# pandas
+
 

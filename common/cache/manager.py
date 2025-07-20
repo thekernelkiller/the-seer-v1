@@ -29,6 +29,10 @@ class RedisManager:
     def __repr__(self) -> str:
         return f"<{type(self._instance).__name__} with client={self._instance.client}>"
 
+    def __getattr__(self, name):
+        """Delegate attribute access to the underlying redis client."""
+        return getattr(self.client, name)
+
     def get_connection(self) -> redis.StrictRedis:
         return self._instance.client
 
