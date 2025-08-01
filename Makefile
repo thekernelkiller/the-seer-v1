@@ -4,6 +4,7 @@
 VENV_DIR = .venv
 VENV_ACTIVATE = . $(VENV_DIR)/bin/activate
 PYTHON = $(VENV_DIR)/bin/python
+DOCKER_CONTAINER_NAME = redis
 
 # --- Phony targets to avoid conflicts with filenames ---
 .PHONY: all setup services-up services-down run-backend run-frontend run quality style isort
@@ -14,10 +15,12 @@ all: run
 # --- Setup ---
 setup:
 	@echo "--- Setting up Python virtual environment ---"
-	@if [ ! -d "$(VENV_DIR)" ]; then \
-		python3 -m venv $(VENV_DIR); \
-		echo "Virtual environment created at $(VENV_DIR)"; \
+	@if [ -d "$(VENV_DIR)" ]; then \
+		echo "Removing existing virtual environment..."; \
+		rm -rf $(VENV_DIR); \
 	fi
+	@echo "Creating new virtual environment..."
+	@python3 -m venv $(VENV_DIR)
 	@echo "--- Activating virtual environment and installing dependencies ---"
 	@$(VENV_ACTIVATE); \
 	$(PYTHON) -m pip install --upgrade pip; \
@@ -28,9 +31,15 @@ setup:
 
 # --- Docker Services ---
 services-up:
-	@echo "--- Starting Docker services (Redis, Postgres, Qdrant) ---"
-	@docker compose up -d
-	@echo "Services started."
+	@echo "--- Checking Docker services (Redis) ---"
+	@if [ $$(docker ps -q -f name=$(DOCKER_CONTAINER_NAME)) ]; then \
+		echo "Redis container is already running."; \
+	else \
+		echo "Starting Redis container..."; \
+		docker compose up -d; \
+	fi
+	@echo "Services are ready."
+
 
 services-down:
 	@echo "--- Stopping Docker services ---"
@@ -65,7 +74,7 @@ check_dirs := .
 quality:
 	@echo "--- Checking code quality ---"
 	@$(VENV_ACTIVATE); black --check $(check_dirs)
-	@$(VENV_ACTIVATE); ruff check $(check_dirs)
+	@$(V_ACTIVATE); ruff check $(check_dirs)
 
 style:
 	@echo "--- Formatting code ---"
