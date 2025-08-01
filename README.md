@@ -1,8 +1,8 @@
 ```bash
-python main.py
+make run
 ```
 
-The server will start on `http://localhost:8080`
+The uvicorn server will start on `http://localhost:8080` and streamlit server on `http://localhost:8051`
 
 ## 📡 API Usage
 
