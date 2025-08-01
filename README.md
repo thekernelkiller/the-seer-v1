@@ -1,5 +1,7 @@
 ```bash
 make run
+make run-backend
+make run-frontend
 ```
 
 The uvicorn server will start on `http://localhost:8080` and streamlit server on `http://localhost:8051`
