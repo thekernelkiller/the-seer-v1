@@ -40,10 +40,8 @@ llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",
     api_key=config.GEMINI_API_KEY,
     temperature=0.4,  # Low temperature for analytical consistency
-    # Instruct Gemini to always respond with a single JSON object so that the
-    # `_parse_llm_json` helper can reliably parse the response without needing
-    # to strip markdown fences.
-    response_format={"type": "json_object"},
+    # Gemini will still be prompted to output JSON but we avoid passing
+    # unsupported kwargs that trigger warnings in `langchain_google_genai`.
 )
 
 # ---------------------------------------------------------------------------
@@ -597,27 +595,27 @@ async def generate_report(state: AnalysisState) -> AnalysisState:
         market_context=state.get("market_context") or MarketContextAnalysis.model_validate({
             "nifty_trend": "Data unavailable", "sector_rotation": "Data unavailable", 
             "fii_dii_flows": "Data unavailable", "market_sentiment": "Data unavailable",
-            "macro_factors": [], "confidence": {"score": 0, "reasoning": "Data unavailable"}
+            "macro_factors": [], "confidence": {"score": 1, "reasoning": "Data unavailable"}
         }),
         
         fundamental_analysis=state.get("fundamental_data") or FundamentalAnalysis.model_validate({
              "revenue_growth": "Data unavailable", "profitability": "Data unavailable", 
              "balance_sheet_strength": "Data unavailable", "cash_generation": "Data unavailable",
              "valuation_metrics": {}, "competitive_position": "Data unavailable",
-             "management_quality": "Data unavailable", "confidence": {"score": 0, "reasoning": "Data unavailable"}
+             "management_quality": "Data unavailable", "confidence": {"score": 1, "reasoning": "Data unavailable"}
         }),
         
         technical_analysis=state.get("technical_data") or TechnicalAnalysis.model_validate({
             "trend_analysis": "Data unavailable", "support_resistance": "Data unavailable",
             "volume_analysis": "Data unavailable", "technical_indicators": {},
             "chart_patterns": "Data unavailable", "relative_strength": "Data unavailable",
-            "confidence": {"score": 0, "reasoning": "Data unavailable"}
+            "confidence": {"score": 1, "reasoning": "Data unavailable"}
         }),
         
         news_sentiment=state.get("news_sentiment_data") or NewsSentimentAnalysis.model_validate({
             "recent_news_impact": "Data unavailable", "management_commentary": "Data unavailable",
             "analyst_sentiment": "Data unavailable", "social_sentiment": "Data unavailable",
-            "upcoming_catalysts": [], "news_sources": [], "confidence": {"score": 0, "reasoning": "Data unavailable"}
+            "upcoming_catalysts": [], "news_sources": [], "confidence": {"score": 1, "reasoning": "Data unavailable"}
         }),
         
         risk_assessment=_safe_model_validate(

@@ -27,7 +27,7 @@ services:
       - ./volumes/qdrant_storage:/qdrant/storage:z
 
   redis:
-    image: redis:latest
+    image: redis:7-alpine
     container_name: redis
     env_file:
       - ./.env

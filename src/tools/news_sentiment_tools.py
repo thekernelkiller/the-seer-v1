@@ -38,6 +38,25 @@ redis_client = RedisManager(
 SERPER_API_URL = "https://google.serper.dev/search"
 SERPER_NEWS_API_URL = "https://google.serper.dev/news"
 
+# ---------------------------------------------------------------------------
+# Helper utilities
+# ---------------------------------------------------------------------------
+
+
+from datetime import date
+
+
+def _build_after_date(days_back: int) -> str:
+    """Return YYYY-MM-DD string *days_back* ago from today (inclusive).
+
+    Used to build `after:` filters in Google-style queries so that Serper only
+    returns **fresh** articles.
+    """
+
+    days_back = max(days_back, 1)
+    target = date.today() - timedelta(days=days_back)
+    return target.strftime("%Y-%m-%d")
+
 
 def cached_news_call(cache_duration_hours: int = 2):
     """
@@ -150,19 +169,29 @@ async def search_company_news(
         # Returns recent Reliance news from Indian financial sources
     """
     try:
-        # Construct search query focusing on Indian financial sources
-        query = f'"{company_name}" OR "{ticker}" site:(economictimes.indiatimes.com OR moneycontrol.com OR livemint.com OR business-standard.com OR zeebiz.com)'
-        
-        # Add date filter
-        if days_back <= 7:
-            query += " after:2024-01-01"  # Recent news
+        # Build a *fresh* query. Do **not** overly restrict to a fixed site list
+        # – that caused stale and sparse results. We still bias towards Indian
+        # finance portals via `gl='in'` but let Google News ranking surface the
+        # most relevant links.
+
+        after_date = _build_after_date(days_back)
+
+        # For Indian context add a light site preference (without strict filter)
+        preferred_sites = "(economictimes.indiatimes.com OR moneycontrol.com OR livemint.com OR business-standard.com OR zeebiz.com)"
+
+        query = (
+            f'("{company_name}" OR "{ticker}") '
+            f'{preferred_sites} '
+            f'after:{after_date}'
+        )
         
         response = await _make_serper_request(
             SERPER_NEWS_API_URL,
             query,
             num=num_results,
             hl="en",
-            gl="in"  # Geographic location: India
+            gl="in",  # Geographic location: India
+            type="news",
         )
         
         # Process and enrich the response
@@ -244,7 +273,13 @@ async def search_sector_news(
         }
         
         keywords = sector_keywords.get(sector, sector)
-        query = f'India "{sector}" OR "{keywords}" (nifty OR sensex OR stock market) site:(economictimes.indiatimes.com OR moneycontrol.com OR livemint.com OR business-standard.com)'
+
+        after_date = _build_after_date(days_back)
+
+        query = (
+            f'India "{sector}" OR "{keywords}" (nifty OR sensex OR stock market) '
+            f'after:{after_date}'
+        )
         
         response = await _make_serper_request(
             SERPER_NEWS_API_URL,
@@ -321,7 +356,9 @@ async def search_market_sentiment(
         }
         
         base_query = query_templates.get(query_type, query_templates["general"])
-        query = f'{base_query} site:(economictimes.indiatimes.com OR moneycontrol.com OR livemint.com)'
+        after_date = _build_after_date(days_back)
+
+        query = f'{base_query} after:{after_date}'
         
         response = await _make_serper_request(
             SERPER_NEWS_API_URL,
@@ -403,8 +440,10 @@ async def search_regulatory_news(
             "all": "SEBI RBI government policy regulation India financial markets"
         }
         
+        after_date = _build_after_date(days_back)
+
         base_query = regulator_queries.get(regulator, regulator_queries["all"])
-        query = f'{base_query} site:(sebi.gov.in OR rbi.org.in OR economictimes.indiatimes.com OR moneycontrol.com)'
+        query = f'{base_query} after:{after_date}'
         
         response = await _make_serper_request(
             SERPER_NEWS_API_URL,
@@ -456,7 +495,8 @@ def _calculate_relevance_score(content: str, company_name: str, ticker: str) -> 
     """Calculate relevance score for news articles"""
     content_lower = content.lower()
     company_lower = company_name.lower()
-    ticker_clean = ticker.replace(".NS", "").lower()
+    # Remove NSE/BSE qualifiers (dot or colon) for relevance matching
+    ticker_clean = re.sub(r'(:?\.?NS|:?\.?NSE|:?\.?BSE)$', "", ticker, flags=re.I).lower()
     
     score = 0.0
     
